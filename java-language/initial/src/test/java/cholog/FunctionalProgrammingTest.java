@@ -7,16 +7,15 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -135,15 +134,7 @@ public class FunctionalProgrammingTest {
 
             // TODO: 아래 코드를 Comparator를 구현하는 익명 클래스로 변경하여 User의 나이를 기준으로 정렬하세요. 람다로도 구현해보세요.
             final var users = new ArrayList<User>(List.of(brown, neo, brie));
-            for (int i = 0, end = users.size(); i < end; i++) {
-                for (int j = i + 1; j < end; j++) {
-                    if (users.get(i).age() > users.get(j).age()) {
-                        final var temp = users.get(i);
-                        users.set(i, users.get(j));
-                        users.set(j, temp);
-                    }
-                }
-            }
+            users.sort((o1, o2) -> o1.age - o2.age);
 
             for (final var user : users) {
                 System.out.println(user.name() + ": " + user.age());
@@ -239,44 +230,52 @@ public class FunctionalProgrammingTest {
             class Calculator {
                 // TODO: 람다를 활용하여 sum 메서드를 통해 중복을 제거하세요.
                 static int sumAll(final List<Integer> numbers) {
-                    var total = 0;
-                    for (final var number : numbers) {
-                        total += number;
-                    }
-
-                    return total;
+                    return sum(numbers, number -> true);
+//                    var total = 0;
+//                    for (final var number : numbers) {
+//                        total += number;
+//                    }
+//
+//                    return total;
                 }
 
                 // TODO: 람다를 활용하여 sum 메서드를 통해 중복을 제거하세요.
                 static int sumAllEven(final List<Integer> numbers) {
-                    var total = 0;
-                    for (final var number : numbers) {
-                        if (number % 2 == 0) {
-                            total += number;
-                        }
-                    }
-
-                    return total;
+                    return sum(numbers, number -> number % 2 == 0);
+//                    var total = 0;
+//                    for (final var number : numbers) {
+//                        if (number % 2 == 0) {
+//                            total += number;
+//                        }
+//                    }
+//
+//                    return total;
                 }
 
                 // TODO: 람다를 활용하여 sum 메서드를 통해 중복을 제거하세요.
                 static int sumAllOverThree(final List<Integer> numbers) {
-                    var total = 0;
-                    for (final var number : numbers) {
-                        if (number > 3) {
-                            total += number;
-                        }
-                    }
-
-                    return total;
+                    return sum(numbers, number -> number > 3);
+//                    var total = 0;
+//                    for (final var number : numbers) {
+//                        if (number > 3) {
+//                            total += number;
+//                        }
+//                    }
+//
+//                    return total;
                 }
 
                 private static int sum(
                         final List<Integer> numbers,
                         final Predicate<Integer> condition
                 ) {
-                    // TODO: 조건에 맞게 필터링하여 합계를 구하는 기능을 구현하세요.
-                    return 0;
+                    int sum = 0;
+                    for (Integer number : numbers) {
+                        if (condition.test(number)) {
+                            sum += number;
+                        }
+                    }
+                    return sum;
                 }
             }
 
@@ -425,6 +424,16 @@ public class FunctionalProgrammingTest {
             // -----------------------------------------------------------------
 
             assertThat(maxAgeCrew).isEqualTo(new Crew("김재", "th", 29));
+
+
+
+            var myAnswer = crews.stream()
+                    .filter(crew -> crew.name.startsWith("김"))
+                    .filter(crew -> 25 <= crew.age && crew.age < 30)
+                    .filter(crew -> crew.nickname.length() == 2)
+                    .max((o1, o2) -> o2.age - o1.age)
+                    .get();
+            assertThat(myAnswer).isEqualTo(new Crew("김재", "th", 29));
         }
 
         /**
@@ -438,12 +447,16 @@ public class FunctionalProgrammingTest {
 
             // TODO: 아래 코드를 Stream API를 활용하여 구현하세요.
             final var words = contents.split("\\P{L}+");
-            var count = 0;
-            for (final var word : words) {
-                if (word.length() > 12) {
-                    count++;
-                }
-            }
+//            var count = 0;
+//            for (final var word : words) {
+//                if (word.length() > 12) {
+//                    count++;
+//                }
+//            }
+
+            var count = Arrays.stream(words)
+                    .filter(word -> word.length() > 12)
+                    .count();
 
             // -----------------------------------------------------------------
 
@@ -474,6 +487,14 @@ public class FunctionalProgrammingTest {
             // -----------------------------------------------------------------
 
             assertThat(result).isEqualTo("1:2:3:4:5");
+
+            String myResult = numbers.stream()
+                            .map(Objects::toString)
+                            .reduce((o1, o2) -> o1 + ":" + o2)
+                            .get();
+            System.out.println(myResult);
+            assertThat(myResult).isEqualTo("1:2:3:4:5");
+
         }
 
         /**
@@ -488,22 +509,28 @@ public class FunctionalProgrammingTest {
             final var expected = 18;
 
             // TODO: 아래 코드를 Stream API를 활용하여 구현하세요.
-            var result = 0;
-            for (final Integer number : numbers) {
-                if (2 >= number) {
-                    continue;
-                }
-                if (number > 5) {
-                    continue;
-                }
-                if (number * 2 < 7) {
-                    continue;
-                }
-
-                result += number * 2;
-            }
+//            var result = 0;
+//            for (final Integer number : numbers) {
+//                if (2 >= number) {
+//                    continue;
+//                }
+//                if (number > 5) {
+//                    continue;
+//                }
+//                if (number * 2 < 7) {
+//                    continue;
+//                }
+//
+//                result += number * 2;
+//            }
 
             // -----------------------------------------------------------------
+
+            var result = numbers.stream()
+                    .filter(number -> 2 < number && number <= 5)
+                    .mapToInt(number -> number * 2)
+                    .filter(number -> number > 7)
+                    .sum();
 
             assertThat(result).isEqualTo(expected);
         }
@@ -526,8 +553,17 @@ public class FunctionalProgrammingTest {
             final var contents = Files.readString(Paths.get("src/test/resources/war-and-peace.txt"));
 
             // TODO: 위 조건에 맞는 10개의 단어를 추출하세요.
-            // final var words = contents.split("\\P{L}+");
-            final var results = new ArrayList<String>();
+            final var words = contents.split("\\P{L}+");
+//            final var results = new ArrayList<String>();
+            var results = Arrays.stream(words)
+                    .distinct()
+                    .filter(word -> word.length() > 12)
+                    .sorted((o1, o2) -> o1.length() - o2.length())
+                    .limit(100)
+                    .filter(word -> !('A' <= word.charAt(1) && word.charAt(1) <= 'Z'))
+                    .map(word -> word.toLowerCase())
+                    .sorted()
+                    .limit(10);
 
             // -----------------------------------------------------------------
             assertThat(results).containsExactly(
@@ -552,12 +588,21 @@ public class FunctionalProgrammingTest {
         @DisplayName("전쟁과 평화 내용 중 가장 많이 등장하는 단어의 수를 찾는다")
         void 전쟁과_평화_내용_중_가장_많이_등장하는_단어의_수를_찾는다() throws IOException {
             final var contents = Files.readString(Paths.get("src/test/resources/war-and-peace.txt"));
+//
+//            // TODO: 가장 많이 등장하는 단어의 수를 찾으세요.
+             final var words = contents.split("\\P{L}+");
+////            final var result = 0L;
+//                            .
+//
+//            // -----------------------------------------------------------------
+            var result = Arrays.stream(words)
+                            .collect(Collectors.groupingBy(word -> word, Collectors.counting()))
+                            .values()
+                            .stream()
+                            .mapToLong(word -> word)
+                            .max()
+                            .getAsLong();
 
-            // TODO: 가장 많이 등장하는 단어의 수를 찾으세요.
-            // final var words = contents.split("\\P{L}+");
-            final var result = 0L;
-
-            // -----------------------------------------------------------------
             assertThat(result).isEqualTo(31_949L);
         }
 
